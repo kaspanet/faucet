@@ -22,7 +22,7 @@ WORKDIR /app
 
 RUN apk add --no-cache tini
 
-COPY --from=build /go/src/github.com/kaspanet/kaspad/faucet /app/
+COPY --from=build /go/src/github.com/kaspanet/faucet /app/
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/app/faucet"]

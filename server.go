@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaspanet/kaspad/faucet/config"
+	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/kaspad/httpserverutils"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/pkg/errors"

@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/jinzhu/gorm"
-	"github.com/kaspanet/kaspad/faucet/config"
+	"github.com/kaspanet/faucet/config"
 
 	"github.com/golang-migrate/migrate/v4"
 )

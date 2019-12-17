@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kaspanet/kaspad/faucet/database"
+	"github.com/kaspanet/faucet/database"
 	"github.com/kaspanet/kaspad/httpserverutils"
 	"github.com/pkg/errors"
 	"net"
