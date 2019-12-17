@@ -1,11 +1,9 @@
-// Copyright (c) 2013-2016 The btcsuite developers
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
-
 package database
 
-import (
-	"github.com/kaspanet/kaspad/logger"
-)
+import "github.com/kaspanet/kaspad/util/panics"
+import "github.com/kaspanet/kaspad/kasparov/logger"
 
-var log, _ = logger.Get(logger.SubsystemTags.BCDB)
+var (
+	log   = logger.BackendLog.Logger("DTBS")
+	spawn = panics.GoroutineWrapperFunc(log)
+)
