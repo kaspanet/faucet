@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/kaspanet/kaspad/dagconfig"
-	"github.com/kaspanet/kaspad/ecc"
+	"os"
+
 	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/faucet/database"
+	"github.com/kaspanet/kaspad/dagconfig"
+	"github.com/kaspanet/kaspad/ecc"
 	"github.com/kaspanet/kaspad/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/base58"
 	"github.com/pkg/errors"
-	"os"
 
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"

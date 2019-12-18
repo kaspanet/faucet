@@ -1,12 +1,13 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/jessevdk/go-flags"
 	"github.com/kaspanet/kaspad/dagconfig"
-	"github.com/kaspanet/kasparov/logger"
 	"github.com/kaspanet/kaspad/util"
+	"github.com/kaspanet/kasparov/logger"
 	"github.com/pkg/errors"
-	"path/filepath"
 )
 
 const (
