@@ -3,8 +3,9 @@ package database
 import (
 	nativeerrors "errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/jinzhu/gorm"

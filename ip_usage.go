@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/kaspanet/faucet/database"
-	"github.com/kaspanet/kaspad/httpserverutils"
-	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/kaspanet/faucet/database"
+	"github.com/kaspanet/kasparov/httpserverutils"
+	"github.com/pkg/errors"
 )
 
 const minRequestInterval = time.Hour * 24

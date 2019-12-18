@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaspanet/faucet/config"
-	"github.com/kaspanet/kaspad/httpserverutils"
-	"github.com/kaspanet/kaspad/util"
-	"github.com/pkg/errors"
 	"net/http"
 	"time"
+
+	"github.com/kaspanet/faucet/config"
+	"github.com/kaspanet/kaspad/util"
+	"github.com/kaspanet/kasparov/httpserverutils"
+	"github.com/pkg/errors"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
