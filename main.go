@@ -28,6 +28,7 @@ var (
 
 func main() {
 	defer panics.HandlePanic(log, nil, nil)
+	interrupt := signal.InterruptListener()
 
 	err := config.Parse()
 	if err != nil {
@@ -79,7 +80,6 @@ func main() {
 	shutdownServer := startHTTPServer(cfg.HTTPListen)
 	defer shutdownServer()
 
-	interrupt := signal.InterruptListener()
 	<-interrupt
 }
 
