@@ -60,9 +60,9 @@ func Parse() error {
 	_, err := parser.Parse()
 
 	// Show the version and exit if the version flag was specified.
-	appName := filepath.Base(os.Args[0])
-	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
 	if cfg.ShowVersion {
+		appName := filepath.Base(os.Args[0])
+		appName = strings.TrimSuffix(appName, filepath.Ext(appName))
 		fmt.Println(appName, "version", version.Version())
 		os.Exit(0)
 	}
