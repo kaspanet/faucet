@@ -38,8 +38,8 @@ recommended that `GOPATH` is set to a directory in your home directory such as
 - Run the following commands to obtain and install faucet including all dependencies:
 
 ```bash
-$ git clone https://github.com/kaspanet/faucet $GOPATH/src/github.com/kaspanet/kasparov
-$ cd $GOPATH/src/github.com/kaspanet/kasparov
+$ git clone https://github.com/kaspanet/faucet $GOPATH/src/github.com/kaspanet/faucet
+$ cd $GOPATH/src/github.com/kaspanet/faucet
 $ go install ./...
 ```
 
@@ -71,5 +71,5 @@ is used for this project.
 
 ## License
 
-Kasparov is licensed under the [copyfree](http://copyfree.org) ISC License.
+Faucet is licensed under the [copyfree](http://copyfree.org) ISC License.
 
