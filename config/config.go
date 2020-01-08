@@ -1,9 +1,13 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/kaspad/dagconfig"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kasparov/logger"
@@ -27,6 +31,7 @@ var (
 
 // Config defines the configuration options for the API server.
 type Config struct {
+	ShowVersion  bool    `short:"V" long:"version" description:"Display version information and exit"`
 	LogDir       string  `long:"logdir" description:"Directory to log output."`
 	HTTPListen   string  `long:"listen" description:"HTTP address to listen on (default: 0.0.0.0:8081)"`
 	KasparovdURL string  `long:"kasparovd-url" description:"The API server url to connect to"`
@@ -51,8 +56,17 @@ func Parse() error {
 		DBAddress:  defaultDBAddress,
 		HTTPListen: defaultHTTPListen,
 	}
-	parser := flags.NewParser(cfg, flags.PrintErrors|flags.HelpFlag)
+	parser := flags.NewParser(cfg, flags.HelpFlag)
 	_, err := parser.Parse()
+
+	// Show the version and exit if the version flag was specified.
+	if cfg.ShowVersion {
+		appName := filepath.Base(os.Args[0])
+		appName = strings.TrimSuffix(appName, filepath.Ext(appName))
+		fmt.Println(appName, "version", version.Version())
+		os.Exit(0)
+	}
+
 	if err != nil {
 		return err
 	}

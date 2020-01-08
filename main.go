@@ -6,6 +6,7 @@ import (
 
 	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/faucet/database"
+	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/kaspad/dagconfig"
 	"github.com/kaspanet/kaspad/ecc"
 	"github.com/kaspanet/kaspad/txscript"
@@ -26,6 +27,8 @@ var (
 	faucetScriptPubKey []byte
 )
 
+const appName = "faucet"
+
 func main() {
 	defer panics.HandlePanic(log, nil, nil)
 	interrupt := signal.InterruptListener()
@@ -33,7 +36,7 @@ func main() {
 	err := config.Parse()
 	if err != nil {
 		err := errors.Wrap(err, "Error parsing command-line arguments")
-		_, err = fmt.Fprintf(os.Stderr, err.Error())
+		_, err = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		if err != nil {
 			panic(err)
 		}
@@ -44,6 +47,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Show version at startup.
+	log.Infof("Version %s", version.Version())
 
 	if cfg.Migrate {
 		err := database.Migrate()
