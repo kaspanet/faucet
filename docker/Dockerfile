@@ -7,7 +7,8 @@ RUN mkdir -p /go/src/github.com/kaspanet/faucet
 
 WORKDIR /go/src/github.com/kaspanet/faucet
 
-RUN apk add --no-cache curl git
+RUN apk add --no-cache curl git openssh binutils gcc musl-dev
+RUN go get -u golang.org/x/lint/golint
 
 COPY go.mod .
 COPY go.sum .
