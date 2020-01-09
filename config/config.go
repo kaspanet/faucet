@@ -109,14 +109,14 @@ func resolveNetwork(cfg *Config) error {
 			"together -- choose one of them")
 	}
 
-	activeNetParams = &dagconfig.MainNetParams
+	activeNetParams = &dagconfig.MainnetParams
 	switch {
 	case cfg.TestNet:
-		activeNetParams = &dagconfig.TestNetParams
+		activeNetParams = &dagconfig.TestnetParams
 	case cfg.SimNet:
-		activeNetParams = &dagconfig.SimNetParams
+		activeNetParams = &dagconfig.SimnetParams
 	case cfg.DevNet:
-		activeNetParams = &dagconfig.DevNetParams
+		activeNetParams = &dagconfig.DevnetParams
 	}
 
 	return nil
