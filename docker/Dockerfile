@@ -1,7 +1,7 @@
 # -- multistage docker build: stage #1: build stage
 FROM golang:1.13-alpine AS build
-ARG KASPAD_VERSION=latest
-ARG KASPAROV_VERSION=latest
+ARG KASPAD_VERSION
+ARG KASPAROV_VERSION
 
 RUN mkdir -p /go/src/github.com/kaspanet/faucet
 
@@ -17,7 +17,7 @@ COPY go.sum .
 # but for deployment we should use the one in github
 RUN go mod edit -dropreplace github.com/kaspanet/kaspad 
 RUN go mod edit -dropreplace github.com/kaspanet/kasparov
-RUN go mod edit -require github.com/kaspanet/kaspad@$KASPAD_VERSION -require github.com/kaspanet/kasparov@$KASPAROV_VERSION
+RUN if [ -n "${KASPAD_VERSION}" ]; then go mod edit -require github.com/kaspanet/kaspad@$KASPAD_VERSION -require github.com/kaspanet/kasparov@$KASPAROV_VERSION; fi
 RUN cp go.mod go.mod.bu
 
 RUN go mod download
