@@ -34,7 +34,7 @@ const (
 type utxoSet map[wire.Outpoint]*blockdag.UTXOEntry
 
 // apiURL returns a full concatenated URL from the base
-// API server URL and the given path.
+// Kasparovd server URL and the given path.
 func apiURL(requestPath string) (string, error) {
 	cfg, err := config.MainConfig()
 	if err != nil {
@@ -48,7 +48,7 @@ func apiURL(requestPath string) (string, error) {
 	return u.String(), nil
 }
 
-// getFromAPIServer makes an HTTP GET request to the API server
+// getFromAPIServer makes an HTTP GET request to the Kasparovd server
 // to the given request path, and returns the response body.
 func getFromAPIServer(requestPath string) ([]byte, error) {
 	getAPIURL, err := apiURL(requestPath)
@@ -80,7 +80,7 @@ func getFromAPIServer(requestPath string) ([]byte, error) {
 	return body, nil
 }
 
-// getFromAPIServer makes an HTTP POST request to the API server
+// postToAPIServer makes an HTTP POST request to the Kasparovd server
 // to the given request path. It converts the given data to JSON,
 // and post it as the POST data.
 func postToAPIServer(requestPath string, data interface{}) error {
@@ -150,7 +150,7 @@ func getWalletUTXOSet() (utxoSet, error) {
 			return nil, err
 		}
 		outpoint := wire.NewOutpoint(txID, utxoResponse.Index)
-		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, utxoResponse.AcceptingBlockBlueScore)
+		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, *utxoResponse.AcceptingBlockBlueScore)
 		if !isUTXOMatured(utxoEntry, *utxoResponse.Confirmations) {
 			continue
 		}

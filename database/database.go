@@ -14,7 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 )
 
-// db is the API server database.
+// db is the faucet database.
 var db *gorm.DB
 
 // DB returns a reference to the database connection
