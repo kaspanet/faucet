@@ -51,7 +51,7 @@ $ go install ./...
 ## Getting Started
 
 Faucet expects to have access to the following systems:
-- A [kasparovd](https://github.com/kaspanet/kasparov) instance
+- A [kasparov server](https://github.com/kaspanet/kasparov)
 - A MySQL database
 
 ### Linux/BSD/POSIX/Source

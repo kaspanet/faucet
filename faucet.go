@@ -34,13 +34,13 @@ const (
 type utxoSet map[wire.Outpoint]*blockdag.UTXOEntry
 
 // apiURL returns a full concatenated URL from the base
-// Kasparovd server URL and the given path.
+// kasparov server URL and the given path.
 func apiURL(requestPath string) (string, error) {
 	cfg, err := config.MainConfig()
 	if err != nil {
 		return "", err
 	}
-	u, err := url.Parse(cfg.KasparovdURL)
+	u, err := url.Parse(cfg.KasparovURL)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -48,7 +48,7 @@ func apiURL(requestPath string) (string, error) {
 	return u.String(), nil
 }
 
-// getFromAPIServer makes an HTTP GET request to the Kasparovd server
+// getFromAPIServer makes an HTTP GET request to the kasparov server
 // to the given request path, and returns the response body.
 func getFromAPIServer(requestPath string) ([]byte, error) {
 	getAPIURL, err := apiURL(requestPath)
@@ -80,7 +80,7 @@ func getFromAPIServer(requestPath string) ([]byte, error) {
 	return body, nil
 }
 
-// postToAPIServer makes an HTTP POST request to the Kasparovd server
+// postToAPIServer makes an HTTP POST request to the kasparov server
 // to the given request path. It converts the given data to JSON,
 // and post it as the POST data.
 func postToAPIServer(requestPath string, data interface{}) error {
