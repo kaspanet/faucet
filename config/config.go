@@ -29,22 +29,22 @@ var (
 	activeNetParams *dagconfig.Params
 )
 
-// Config defines the configuration options for the API server.
+// Config defines the configuration options for the faucet.
 type Config struct {
-	ShowVersion  bool    `short:"V" long:"version" description:"Display version information and exit"`
-	LogDir       string  `long:"logdir" description:"Directory to log output."`
-	HTTPListen   string  `long:"listen" description:"HTTP address to listen on (default: 0.0.0.0:8081)"`
-	KasparovdURL string  `long:"kasparovd-url" description:"The API server url to connect to"`
-	PrivateKey   string  `long:"private-key" description:"Faucet Private key"`
-	DBAddress    string  `long:"dbaddress" description:"Database address"`
-	DBUser       string  `long:"dbuser" description:"Database user" required:"true"`
-	DBPassword   string  `long:"dbpass" description:"Database password" required:"true"`
-	DBName       string  `long:"dbname" description:"Database name" required:"true"`
-	Migrate      bool    `long:"migrate" description:"Migrate the database to the latest version. The server will not start when using this flag."`
-	FeeRate      float64 `long:"fee-rate" description:"Coins per gram fee rate"`
-	TestNet      bool    `long:"testnet" description:"Connect to testnet"`
-	SimNet       bool    `long:"simnet" description:"Connect to the simulation test network"`
-	DevNet       bool    `long:"devnet" description:"Connect to the development test network"`
+	ShowVersion bool    `short:"V" long:"version" description:"Display version information and exit"`
+	LogDir      string  `long:"logdir" description:"Directory to log output."`
+	HTTPListen  string  `long:"listen" description:"HTTP address to listen on (default: 0.0.0.0:8081)"`
+	KasparovURL string  `long:"kasparov-url" description:"The kasparov url to connect to"`
+	PrivateKey  string  `long:"private-key" description:"Faucet Private key"`
+	DBAddress   string  `long:"dbaddress" description:"Database address"`
+	DBUser      string  `long:"dbuser" description:"Database user" required:"true"`
+	DBPassword  string  `long:"dbpass" description:"Database password" required:"true"`
+	DBName      string  `long:"dbname" description:"Database name" required:"true"`
+	Migrate     bool    `long:"migrate" description:"Migrate the database to the latest version. The server will not start when using this flag."`
+	FeeRate     float64 `long:"fee-rate" description:"Coins per gram fee rate"`
+	TestNet     bool    `long:"testnet" description:"Connect to testnet"`
+	SimNet      bool    `long:"simnet" description:"Connect to the simulation test network"`
+	DevNet      bool    `long:"devnet" description:"Connect to the development test network"`
 }
 
 var cfg *Config
@@ -72,7 +72,7 @@ func Parse() error {
 	}
 
 	if !cfg.Migrate {
-		if cfg.KasparovdURL == "" {
+		if cfg.KasparovURL == "" {
 			return errors.New("api-server-url argument is required when --migrate flag is not raised")
 		}
 		if cfg.PrivateKey == "" {
