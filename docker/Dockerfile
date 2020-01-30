@@ -17,9 +17,14 @@ RUN go mod edit -dropreplace github.com/kaspanet/kaspad
 RUN go mod edit -dropreplace github.com/kaspanet/kasparov
 ARG KASPAD_VERSION
 ARG KASPAROV_VERSION
-RUN if [ -n "${KASPAD_VERSION}" ]; then go mod edit -require github.com/kaspanet/kaspad@$KASPAD_VERSION -require github.com/kaspanet/kasparov@$KASPAROV_VERSION; fi
-RUN cp go.mod go.mod.bu
+RUN if [ -n "${KASPAD_VERSION}" ] || [ -n "${KASPAROV_VERSION}" ] ; then \
+        # use replace instead of require - to propagate into nested dependancies
+        go mod edit \                       
+        -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION \
+        -replace github.com/kaspanet/kasparov=github.com/kaspanet/kasparov@$KASPAROV_VERSION; \
+    fi
 
+RUN cp go.mod go.mod.bu
 RUN go mod download
 
 COPY . .
