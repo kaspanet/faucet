@@ -17,7 +17,7 @@ RUN go mod edit -dropreplace github.com/kaspanet/kaspad
 RUN go mod edit -dropreplace github.com/kaspanet/kasparov
 ARG KASPAD_VERSION
 ARG KASPAROV_VERSION
-RUN if [ -n "${KASPAD_VERSION}" ] || [ -n "${KASPAROV_VERSION}" ] ; then \
+RUN \
     if [ -n "${KASPAD_VERSION}" ] || [ -n "${KASPAROV_VERSION}" ] ; then \
         if [ -z "${KASPAD_VERSION}" ] || [ -z "${KASPAROV_VERSION}" ] ; then \
             >&2 echo "KASPAD_VERSION and KASPAROV_VERSION must be both set or both unset"; \
