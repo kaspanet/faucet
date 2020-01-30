@@ -25,8 +25,8 @@ const (
 	sendAmount = 10000
 	// Value 8 bytes + serialized varint size for the length of ScriptPubKey +
 	// ScriptPubKey bytes.
-	outputSize uint64 = 8 + 1 + 25
 	minTxFee   uint64 = 3000
+	outputSize uint64 = 8 + 1 + 25
 
 	requiredConfirmations = 10
 )
