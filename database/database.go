@@ -97,7 +97,8 @@ func isCurrent(migrator *migrate.Migrate, driver source.Driver) (bool, uint, err
 
 	// The database is current if Next returns ErrNotExist
 	_, err = driver.Next(version)
-	if pathErr, ok := err.(*os.PathError); ok {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
 		if pathErr.Err == os.ErrNotExist {
 			return true, version, nil
 		}
