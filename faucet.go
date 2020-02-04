@@ -16,8 +16,8 @@ import (
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/daghash"
 	"github.com/kaspanet/kaspad/wire"
+	"github.com/kaspanet/kasparov/apimodels"
 	"github.com/kaspanet/kasparov/httpserverutils"
-	"github.com/kaspanet/kasparov/kasparovd/apimodels"
 	"github.com/pkg/errors"
 )
 
