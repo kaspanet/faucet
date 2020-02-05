@@ -150,7 +150,7 @@ func getWalletUTXOSet() (utxoSet, error) {
 			return nil, err
 		}
 		outpoint := wire.NewOutpoint(txID, utxoResponse.Index)
-		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, utxoResponse.AcceptingBlockBlueScore)
+		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, *utxoResponse.AcceptingBlockBlueScore)
 		if !isUTXOMatured(utxoEntry, *utxoResponse.Confirmations) {
 			continue
 		}
