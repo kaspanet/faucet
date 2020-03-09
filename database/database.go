@@ -25,6 +25,7 @@ func DB() (*pg.DB, error) {
 	return db, nil
 }
 
+// Connect connects to the database mentioned in the config variable.
 func Connect(cfg *config.Config) error {
 	migrator, driver, err := openMigrator(cfg)
 	if err != nil {
