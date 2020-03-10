@@ -41,6 +41,10 @@ func validateIPUsage(r *http.Request) error {
 		Where("last_use BETWEEN ? AND ?", timeBeforeMinRequestInterval, now).
 		Count()
 
+	if err != nil {
+		return err
+	}
+
 	if count != 0 {
 		return httpserverutils.NewHandlerError(http.StatusForbidden, errors.New("A user is allowed to to have one request from the faucet every 24 hours"))
 	}
@@ -58,10 +62,9 @@ func updateIPUsage(r *http.Request) error {
 		return err
 	}
 
-	ipUse := &ipUse{IP: ip}
+	ipUse := &ipUse{IP: ip, LastUse: time.Now()}
 	_, err = db.Model(ipUse).
 		OnConflict("(ip) DO UPDATE").
-		Set("last_use = ?", time.Now()).
 		Insert()
 
 	if err != nil {
