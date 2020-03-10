@@ -35,12 +35,12 @@ var (
 type Config struct {
 	ShowVersion bool    `short:"V" long:"version" description:"Display version information and exit"`
 	LogDir      string  `long:"logdir" description:"Directory to log output."`
-	HTTPListen  string  `long:"listen" description:"HTTP address to listen on (default: 0.0.0.0:8081)"`
+	HTTPListen  string  `long:"listen" description:"HTTP address to listen on default: 0.0.0.0:8081)"`
 	KasparovURL string  `long:"kasparov-url" description:"The kasparov url to connect to"`
 	PrivateKey  string  `long:"private-key" description:"Faucet Private key"`
-	DBHost      string  `long:"dbhost" description:"Database host"`
-	DBPort      string  `long:"dbport" description:"Database port"`
-	DBSSLMode   string  `long:"dbsslmode" description:"Database SSL mode {disable, allow, prefer, require, verify-ca, verify-full}"`
+	DBHost      string  `long:"dbhost" description:"Database host" default:"localhost"`
+	DBPort      string  `long:"dbport" description:"Database port" default:"5432"`
+	DBSSLMode   string  `long:"dbsslmode" description:"Database SSL mode" choice:"disable" choice:"allow" choice:"prefer" choice:"require" choice:"verify-ca" choice:"verify-full" default:"disable"`
 	DBUser      string  `long:"dbuser" description:"Database user" required:"true"`
 	DBPassword  string  `long:"dbpass" description:"Database password" required:"true"`
 	DBName      string  `long:"dbname" description:"Database name" required:"true"`
