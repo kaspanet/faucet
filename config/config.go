@@ -22,8 +22,6 @@ const (
 var (
 	// Default configuration options
 	defaultLogDir     = util.AppDataDir("faucet", false)
-	defaultDBAddress  = "localhost:5432"
-	defaultDBSSLMode  = "disable"
 	defaultHTTPListen = "0.0.0.0:8081"
 
 	// activeNetParams are the currently active net params
@@ -55,8 +53,6 @@ var cfg *Config
 func Parse() error {
 	cfg = &Config{
 		LogDir:     defaultLogDir,
-		DBAddress:  defaultDBAddress,
-		DBSSLMode:  defaultDBSSLMode,
 		HTTPListen: defaultHTTPListen,
 	}
 	parser := flags.NewParser(cfg, flags.HelpFlag)
