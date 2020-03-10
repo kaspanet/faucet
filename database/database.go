@@ -4,14 +4,11 @@ import (
 	nativeerrors "errors"
 	"fmt"
 	"github.com/go-pg/pg/v9"
-	"os"
-
-	"github.com/pkg/errors"
-
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/source"
 	"github.com/kaspanet/faucet/config"
-
-	"github.com/golang-migrate/migrate/v4"
+	"github.com/pkg/errors"
+	"os"
 )
 
 // db is the faucet database.

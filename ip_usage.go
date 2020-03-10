@@ -36,7 +36,11 @@ func validateIPUsage(r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	count, err := db.Model(&ipUse{}).Where("ip = ?", ip).Where("last_use BETWEEN ? AND ?", timeBeforeMinRequestInterval, now).Count()
+	count, err := db.Model(&ipUse{}).
+		Where("ip = ?", ip).
+		Where("last_use BETWEEN ? AND ?", timeBeforeMinRequestInterval, now).
+		Count()
+
 	if count != 0 {
 		return httpserverutils.NewHandlerError(http.StatusForbidden, errors.New("A user is allowed to to have one request from the faucet every 24 hours"))
 	}
