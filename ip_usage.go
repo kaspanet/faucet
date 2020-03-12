@@ -32,16 +32,19 @@ func validateIPUsage(r *http.Request) error {
 	}
 	now := time.Now()
 	timeBeforeMinRequestInterval := now.Add(-minRequestInterval)
-	var count int
 	ip, err := ipFromRequest(r)
 	if err != nil {
 		return err
 	}
-	dbResult := db.Model(&ipUse{}).Where(&ipUse{IP: ip}).Where("last_use BETWEEN ? AND ?", timeBeforeMinRequestInterval, now).Count(&count)
-	dbErrors := dbResult.GetErrors()
-	if httpserverutils.HasDBError(dbErrors) {
-		return httpserverutils.NewErrorFromDBErrors("Some errors were encountered when checking the last use of an IP:", dbResult.GetErrors())
+	count, err := db.Model(&ipUse{}).
+		Where("ip = ?", ip).
+		Where("last_use BETWEEN ? AND ?", timeBeforeMinRequestInterval, now).
+		Count()
+
+	if err != nil {
+		return err
 	}
+
 	if count != 0 {
 		return httpserverutils.NewHandlerError(http.StatusForbidden, errors.New("A user is allowed to to have one request from the faucet every 24 hours"))
 	}
@@ -58,10 +61,14 @@ func updateIPUsage(r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	dbResult := db.Where(&ipUse{IP: ip}).Assign(&ipUse{LastUse: time.Now()}).FirstOrCreate(&ipUse{})
-	dbErrors := dbResult.GetErrors()
-	if httpserverutils.HasDBError(dbErrors) {
-		return httpserverutils.NewErrorFromDBErrors("Some errors were encountered when upserting the IP to the new date:", dbResult.GetErrors())
+
+	ipUse := &ipUse{IP: ip, LastUse: time.Now()}
+	_, err = db.Model(ipUse).
+		OnConflict("(ip) DO UPDATE").
+		Insert()
+
+	if err != nil {
+		return err
 	}
 	return nil
 }

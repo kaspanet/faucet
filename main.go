@@ -14,9 +14,8 @@ import (
 	"github.com/kaspanet/kaspad/util/base58"
 	"github.com/pkg/errors"
 
-	_ "github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/kaspanet/kaspad/signal"
 	"github.com/kaspanet/kaspad/util/panics"
 )
@@ -30,7 +29,7 @@ var (
 const appName = "faucet"
 
 func main() {
-	defer panics.HandlePanic(log, nil, nil)
+	defer panics.HandlePanic(log, nil)
 	interrupt := signal.InterruptListener()
 
 	err := config.Parse()
@@ -52,14 +51,14 @@ func main() {
 	log.Infof("Version %s", version.Version())
 
 	if cfg.Migrate {
-		err := database.Migrate()
+		err := database.Migrate(cfg)
 		if err != nil {
 			panic(errors.Errorf("Error migrating database: %s", err))
 		}
 		return
 	}
 
-	err = database.Connect()
+	err = database.Connect(cfg)
 	if err != nil {
 		panic(errors.Errorf("Error connecting to database: %s", err))
 	}
