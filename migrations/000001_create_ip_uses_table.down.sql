@@ -1,1 +1,1 @@
-DROP TABLE `ip_uses`;
+DROP TABLE ip_uses;

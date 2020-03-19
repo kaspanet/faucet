@@ -3,43 +3,28 @@ package database
 import (
 	nativeerrors "errors"
 	"fmt"
-	"os"
-
-	"github.com/pkg/errors"
-
-	"github.com/golang-migrate/migrate/v4/source"
-	"github.com/jinzhu/gorm"
-	"github.com/kaspanet/faucet/config"
-
+	"github.com/go-pg/pg/v9"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/kaspanet/faucet/config"
+	"github.com/pkg/errors"
+	"os"
 )
 
 // db is the faucet database.
-var db *gorm.DB
+var db *pg.DB
 
 // DB returns a reference to the database connection
-func DB() (*gorm.DB, error) {
+func DB() (*pg.DB, error) {
 	if db == nil {
 		return nil, errors.New("Database is not connected")
 	}
 	return db, nil
 }
 
-type gormLogger struct{}
-
-func (l gormLogger) Print(v ...interface{}) {
-	str := fmt.Sprint(v...)
-	log.Errorf(str)
-}
-
-// Connect connects to the database mentioned in
-// config variable.
-func Connect() error {
-	connectionString, err := buildConnectionString()
-	if err != nil {
-		return err
-	}
-	migrator, driver, err := openMigrator(connectionString)
+// Connect connects to the database mentioned in the config variable.
+func Connect(cfg *config.Config) error {
+	migrator, driver, err := openMigrator(cfg)
 	if err != nil {
 		return err
 	}
@@ -51,13 +36,13 @@ func Connect() error {
 		return errors.Errorf("Database is not current (version %d). Please migrate"+
 			" the database by running the faucet with --migrate flag and then run it again.", version)
 	}
-
-	db, err = gorm.Open("mysql", connectionString)
+	connectionOptions, err := pg.ParseURL(buildConnectionString(cfg))
 	if err != nil {
 		return err
 	}
 
-	db.SetLogger(gormLogger{})
+	db = pg.Connect(connectionOptions)
+
 	return nil
 }
 
@@ -71,13 +56,9 @@ func Close() error {
 	return err
 }
 
-func buildConnectionString() (string, error) {
-	cfg, err := config.MainConfig()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=True",
-		cfg.DBUser, cfg.DBPassword, cfg.DBAddress, cfg.DBName), nil
+func buildConnectionString(cfg *config.Config) string {
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s",
+		cfg.DBUser, cfg.DBPassword, cfg.DBAddress, cfg.DBName, cfg.DBSSLMode)
 }
 
 // isCurrent resolves whether the database is on the latest
@@ -106,13 +87,13 @@ func isCurrent(migrator *migrate.Migrate, driver source.Driver) (bool, uint, err
 	return false, version, err
 }
 
-func openMigrator(connectionString string) (*migrate.Migrate, source.Driver, error) {
+func openMigrator(cfg *config.Config) (*migrate.Migrate, source.Driver, error) {
 	driver, err := source.Open("file://migrations")
 	if err != nil {
 		return nil, nil, err
 	}
 	migrator, err := migrate.NewWithSourceInstance(
-		"migrations", driver, "mysql://"+connectionString)
+		"migrations", driver, buildConnectionString(cfg))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,12 +101,8 @@ func openMigrator(connectionString string) (*migrate.Migrate, source.Driver, err
 }
 
 // Migrate database to the latest version.
-func Migrate() error {
-	connectionString, err := buildConnectionString()
-	if err != nil {
-		return err
-	}
-	migrator, driver, err := openMigrator(connectionString)
+func Migrate(cfg *config.Config) error {
+	migrator, driver, err := openMigrator(cfg)
 	if err != nil {
 		return err
 	}
