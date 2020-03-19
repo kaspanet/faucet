@@ -1,6 +1,6 @@
 module github.com/kaspanet/faucet
 
-go 1.13
+go 1.14
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.7.1
