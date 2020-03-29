@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 
 	"github.com/kaspanet/faucet/config"
@@ -14,6 +12,7 @@ import (
 	"github.com/kaspanet/kaspad/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/base58"
+	"github.com/kaspanet/kaspad/util/profiling"
 	"github.com/pkg/errors"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -54,13 +53,7 @@ func main() {
 
 	// Enable http profiling server if requested.
 	if cfg.Profile != "" {
-		spawn(func() {
-			listenAddr := net.JoinHostPort("", cfg.Profile)
-			log.Infof("Profile server listening on %s", listenAddr)
-			profileRedirect := http.RedirectHandler("/debug/pprof", http.StatusSeeOther)
-			http.Handle("/", profileRedirect)
-			log.Errorf("%s", http.ListenAndServe(listenAddr, nil))
-		})
+		profiling.Start(cfg.Profile)
 	}
 
 	if cfg.Migrate {
