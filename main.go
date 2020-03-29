@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 
 	"github.com/kaspanet/faucet/config"
@@ -49,6 +51,17 @@ func main() {
 
 	// Show version at startup.
 	log.Infof("Version %s", version.Version())
+
+	// Enable http profiling server if requested.
+	if cfg.Profile != "" {
+		spawn(func() {
+			listenAddr := net.JoinHostPort("", cfg.Profile)
+			log.Infof("Profile server listening on %s", listenAddr)
+			profileRedirect := http.RedirectHandler("/debug/pprof", http.StatusSeeOther)
+			http.Handle("/", profileRedirect)
+			log.Errorf("%s", http.ListenAndServe(listenAddr, nil))
+		})
+	}
 
 	if cfg.Migrate {
 		err := database.Migrate(cfg)
