@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -45,6 +46,7 @@ type Config struct {
 	TestNet     bool    `long:"testnet" description:"Connect to testnet"`
 	SimNet      bool    `long:"simnet" description:"Connect to the simulation test network"`
 	DevNet      bool    `long:"devnet" description:"Connect to the development test network"`
+	Profile     string  `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
 }
 
 var cfg *Config
@@ -82,6 +84,13 @@ func Parse() error {
 	err = resolveNetwork(cfg)
 	if err != nil {
 		return err
+	}
+
+	if cfg.Profile != "" {
+		profilePort, err := strconv.Atoi(cfg.Profile)
+		if err != nil || profilePort < 1024 || profilePort > 65535 {
+			return errors.New("The profile port must be between 1024 and 65535")
+		}
 	}
 
 	logFile := filepath.Join(cfg.LogDir, defaultLogFilename)

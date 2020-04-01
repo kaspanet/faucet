@@ -12,6 +12,7 @@ import (
 	"github.com/kaspanet/kaspad/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/base58"
+	"github.com/kaspanet/kaspad/util/profiling"
 	"github.com/pkg/errors"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -49,6 +50,11 @@ func main() {
 
 	// Show version at startup.
 	log.Infof("Version %s", version.Version())
+
+	// Enable http profiling server if requested.
+	if cfg.Profile != "" {
+		profiling.Start(cfg.Profile, log)
+	}
 
 	if cfg.Migrate {
 		err := database.Migrate(cfg)
