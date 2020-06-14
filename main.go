@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/kaspanet/kaspad/dagconfig"
 	"github.com/kaspanet/kaspad/txscript"
 	"github.com/kaspanet/kaspad/util"
-	"github.com/kaspanet/kaspad/util/base58"
 	"github.com/kaspanet/kaspad/util/profiling"
 	"github.com/pkg/errors"
 
@@ -26,8 +26,6 @@ var (
 	faucetPrivateKey   *secp256k1.PrivateKey
 	faucetScriptPubKey []byte
 )
-
-const appName = "faucet"
 
 func main() {
 	defer panics.HandlePanic(log, nil)
@@ -75,7 +73,11 @@ func main() {
 		}
 	}()
 
-	privateKeyBytes := base58.Decode(cfg.PrivateKey)
+	privateKeyBytes, err := hex.DecodeString(cfg.PrivateKey)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to deserialize private key"))
+	}
+
 	faucetPrivateKey, _ = secp256k1.DeserializePrivateKeyFromSlice(privateKeyBytes)
 
 	faucetAddress, err = privateKeyToP2PKHAddress(faucetPrivateKey, config.ActiveNetParams())
