@@ -194,10 +194,16 @@ func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*wire.MsgTx,
 	if err != nil {
 		return nil, err
 	}
+
+	scriptPubKey, err := txscript.PayToAddrScript(address)
+	if err != nil {
+		return nil, err
+	}
+
 	if isChangeOutputRequired {
 		tx.AddTxOut(&wire.TxOut{
 			Value:        sendAmount,
-			ScriptPubKey: address.ScriptAddress(),
+			ScriptPubKey: scriptPubKey,
 		})
 		tx.AddTxOut(&wire.TxOut{
 			Value:        netAmount - sendAmount,
@@ -207,7 +213,7 @@ func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*wire.MsgTx,
 	}
 	tx.AddTxOut(&wire.TxOut{
 		Value:        netAmount,
-		ScriptPubKey: address.ScriptAddress(),
+		ScriptPubKey: scriptPubKey,
 	})
 	return tx, nil
 }
