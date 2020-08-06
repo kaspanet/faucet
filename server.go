@@ -33,7 +33,7 @@ func startHTTPServer(listenAddr string) func() {
 		Addr:    listenAddr,
 		Handler: handlers.CORS()(router),
 	}
-	spawn(func() {
+	spawn("startHTTPServer-httpServer.ListenAndServe", func() {
 		log.Errorf("%s", httpServer.ListenAndServe())
 	})
 

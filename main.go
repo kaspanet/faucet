@@ -28,7 +28,7 @@ var (
 )
 
 func main() {
-	defer panics.HandlePanic(log, nil)
+	defer panics.HandlePanic(log, "main", nil)
 	interrupt := signal.InterruptListener()
 
 	err := config.Parse()
