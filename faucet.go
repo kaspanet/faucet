@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/kaspanet/kaspad/domainmessage"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,7 +16,6 @@ import (
 	"github.com/kaspanet/kaspad/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/daghash"
-	"github.com/kaspanet/kaspad/wire"
 	"github.com/kaspanet/kasparov/apimodels"
 	"github.com/kaspanet/kasparov/httpserverutils"
 	"github.com/pkg/errors"
@@ -31,7 +31,7 @@ const (
 	requiredConfirmations = 10
 )
 
-type utxoSet map[wire.Outpoint]*blockdag.UTXOEntry
+type utxoSet map[domainmessage.Outpoint]*blockdag.UTXOEntry
 
 // apiURL returns a full concatenated URL from the base
 // kasparov server URL and the given path.
@@ -141,7 +141,7 @@ func getWalletUTXOSet() (utxoSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		txOut := &wire.TxOut{
+		txOut := &domainmessage.TxOut{
 			Value:        utxoResponse.Value,
 			ScriptPubKey: scriptPubKey,
 		}
@@ -149,7 +149,7 @@ func getWalletUTXOSet() (utxoSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		outpoint := wire.NewOutpoint(txID, utxoResponse.Index)
+		outpoint := domainmessage.NewOutpoint(txID, utxoResponse.Index)
 		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, *utxoResponse.AcceptingBlockBlueScore)
 		if !isUTXOMatured(utxoEntry, *utxoResponse.Confirmations) {
 			continue
@@ -159,7 +159,7 @@ func getWalletUTXOSet() (utxoSet, error) {
 	return walletUTXOSet, nil
 }
 
-func sendToAddress(address util.Address) (*wire.MsgTx, error) {
+func sendToAddress(address util.Address) (*domainmessage.MsgTx, error) {
 	tx, err := createTx(address)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func sendToAddress(address util.Address) (*wire.MsgTx, error) {
 	return tx, postToAPIServer("transaction", rawTx)
 }
 
-func createTx(address util.Address) (*wire.MsgTx, error) {
+func createTx(address util.Address) (*domainmessage.MsgTx, error) {
 	walletUTXOSet, err := getWalletUTXOSet()
 	if err != nil {
 		return nil, err
@@ -188,24 +188,24 @@ func createTx(address util.Address) (*wire.MsgTx, error) {
 	return tx, nil
 }
 
-func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*wire.MsgTx, error) {
-	tx := wire.NewNativeMsgTx(wire.TxVersion, nil, nil)
+func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*domainmessage.MsgTx, error) {
+	tx := domainmessage.NewNativeMsgTx(domainmessage.TxVersion, nil, nil)
 	netAmount, isChangeOutputRequired, err := fundTx(walletUTXOSet, tx, sendAmount)
 	if err != nil {
 		return nil, err
 	}
 	if isChangeOutputRequired {
-		tx.AddTxOut(&wire.TxOut{
+		tx.AddTxOut(&domainmessage.TxOut{
 			Value:        sendAmount,
 			ScriptPubKey: address.ScriptAddress(),
 		})
-		tx.AddTxOut(&wire.TxOut{
+		tx.AddTxOut(&domainmessage.TxOut{
 			Value:        netAmount - sendAmount,
 			ScriptPubKey: faucetScriptPubKey,
 		})
 		return tx, nil
 	}
-	tx.AddTxOut(&wire.TxOut{
+	tx.AddTxOut(&domainmessage.TxOut{
 		Value:        netAmount,
 		ScriptPubKey: address.ScriptAddress(),
 	})
@@ -213,7 +213,7 @@ func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*wire.MsgTx,
 }
 
 // signTx signs a transaction
-func signTx(walletUTXOSet utxoSet, tx *wire.MsgTx) error {
+func signTx(walletUTXOSet utxoSet, tx *domainmessage.MsgTx) error {
 	for i, txIn := range tx.TxIn {
 		outpoint := txIn.PreviousOutpoint
 
@@ -228,14 +228,14 @@ func signTx(walletUTXOSet utxoSet, tx *wire.MsgTx) error {
 	return nil
 }
 
-func fundTx(walletUTXOSet utxoSet, tx *wire.MsgTx, amount uint64) (netAmount uint64, isChangeOutputRequired bool, err error) {
+func fundTx(walletUTXOSet utxoSet, tx *domainmessage.MsgTx, amount uint64) (netAmount uint64, isChangeOutputRequired bool, err error) {
 	amountSelected := uint64(0)
 	isTxFunded := false
 	for outpoint, entry := range walletUTXOSet {
 		amountSelected += entry.Amount()
 
 		// Add the selected output to the transaction
-		tx.AddTxIn(wire.NewTxIn(&outpoint, nil))
+		tx.AddTxIn(domainmessage.NewTxIn(&outpoint, nil))
 
 		// Check if transaction has enough funds. If we don't have enough
 		// coins from the current amount selected to pay the fee continue
@@ -263,7 +263,7 @@ func fundTx(walletUTXOSet utxoSet, tx *wire.MsgTx, amount uint64) (netAmount uin
 // * netAmount is the amount of coins that will be eventually sent to the recipient. If no
 //   change output is needed, the netAmount will be usually a little bit higher than the
 //   targetAmount. Otherwise, it'll be the same as the targetAmount.
-func isFundedAndIsChangeOutputRequired(tx *wire.MsgTx, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded, isChangeOutputRequired bool, netAmount uint64, err error) {
+func isFundedAndIsChangeOutputRequired(tx *domainmessage.MsgTx, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded, isChangeOutputRequired bool, netAmount uint64, err error) {
 	// First check if it can be funded with one output and the required fee for it.
 	isFundedWithOneOutput, oneOutputFee, err := isFundedWithNumberOfOutputs(tx, 1, amountSelected, targetAmount, walletUTXOSet)
 	if err != nil {
@@ -291,7 +291,7 @@ func isFundedAndIsChangeOutputRequired(tx *wire.MsgTx, amountSelected uint64, ta
 
 // isFundedWithNumberOfOutputs returns whether the transaction inputs cover
 // the target amount + the required fee with the assumed number of outputs.
-func isFundedWithNumberOfOutputs(tx *wire.MsgTx, numberOfOutputs uint64, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded bool, fee uint64, err error) {
+func isFundedWithNumberOfOutputs(tx *domainmessage.MsgTx, numberOfOutputs uint64, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded bool, fee uint64, err error) {
 	reqFee, err := calcFee(tx, numberOfOutputs, walletUTXOSet)
 	if err != nil {
 		return false, 0, err
@@ -299,7 +299,7 @@ func isFundedWithNumberOfOutputs(tx *wire.MsgTx, numberOfOutputs uint64, amountS
 	return amountSelected > reqFee && amountSelected-reqFee >= targetAmount, reqFee, nil
 }
 
-func calcFee(msgTx *wire.MsgTx, numberOfOutputs uint64, walletUTXOSet utxoSet) (uint64, error) {
+func calcFee(msgTx *domainmessage.MsgTx, numberOfOutputs uint64, walletUTXOSet utxoSet) (uint64, error) {
 	txMass := calcTxMass(msgTx, walletUTXOSet)
 	txMassWithOutputs := txMass + outputsTotalSize(numberOfOutputs)*blockdag.MassPerTxByte
 	cfg, err := config.MainConfig()
@@ -314,15 +314,15 @@ func calcFee(msgTx *wire.MsgTx, numberOfOutputs uint64, walletUTXOSet utxoSet) (
 }
 
 func outputsTotalSize(numberOfOutputs uint64) uint64 {
-	return numberOfOutputs*outputSize + uint64(wire.VarIntSerializeSize(numberOfOutputs))
+	return numberOfOutputs*outputSize + uint64(domainmessage.VarIntSerializeSize(numberOfOutputs))
 }
 
-func calcTxMass(msgTx *wire.MsgTx, walletUTXOSet utxoSet) uint64 {
+func calcTxMass(msgTx *domainmessage.MsgTx, walletUTXOSet utxoSet) uint64 {
 	previousScriptPubKeys := getPreviousScriptPubKeys(msgTx, walletUTXOSet)
 	return blockdag.CalcTxMass(util.NewTx(msgTx), previousScriptPubKeys)
 }
 
-func getPreviousScriptPubKeys(msgTx *wire.MsgTx, walletUTXOSet utxoSet) [][]byte {
+func getPreviousScriptPubKeys(msgTx *domainmessage.MsgTx, walletUTXOSet utxoSet) [][]byte {
 	previousScriptPubKeys := make([][]byte, len(msgTx.TxIn))
 	for i, txIn := range msgTx.TxIn {
 		outpoint := txIn.PreviousOutpoint
