@@ -9,7 +9,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/kaspanet/faucet/version"
-	"github.com/kaspanet/kaspad/dagconfig"
+	"github.com/kaspanet/kaspad/domain/dagconfig"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kasparov/logger"
 	"github.com/pkg/errors"
