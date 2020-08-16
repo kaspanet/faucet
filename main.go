@@ -9,15 +9,15 @@ import (
 	"github.com/kaspanet/faucet/database"
 	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/go-secp256k1"
-	"github.com/kaspanet/kaspad/dagconfig"
-	"github.com/kaspanet/kaspad/txscript"
+	"github.com/kaspanet/kaspad/domain/dagconfig"
+	"github.com/kaspanet/kaspad/domain/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/profiling"
 	"github.com/pkg/errors"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/kaspanet/kaspad/signal"
+	"github.com/kaspanet/kaspad/infrastructure/signal"
 	"github.com/kaspanet/kaspad/util/panics"
 )
 
