@@ -10,7 +10,7 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/kaspanet/go-secp256k1 v0.0.2
 	github.com/kaspanet/kaspad v0.6.4
-	github.com/kaspanet/kasparov v0.6.3
+	github.com/kaspanet/kasparov v0.6.4
 	github.com/pkg/errors v0.9.1
 )
 
