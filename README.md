@@ -72,4 +72,3 @@ is used for this project.
 ## License
 
 Faucet is licensed under the copyfree [ISC License](https://choosealicense.com/licenses/isc/).
-
