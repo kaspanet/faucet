@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,7 +28,7 @@ func startHTTPServer(listenAddr string) func() {
 	router.HandleFunc(
 		"/request_money",
 		httpserverutils.MakeHandler(requestMoneyHandler)).
-		Methods("POST")
+		Methods("GET")
 	httpServer := &http.Server{
 		Addr:    listenAddr,
 		Handler: handlers.CORS()(router),
@@ -47,36 +47,34 @@ func startHTTPServer(listenAddr string) func() {
 	}
 }
 
-type requestMoneyData struct {
-	Address string `json:"address"`
-}
+func requestMoneyHandler(_ *httpserverutils.ServerContext, request *http.Request,
+	_ map[string]string, queryParams map[string]string, _ []byte) (interface{}, error) {
 
-func requestMoneyHandler(_ *httpserverutils.ServerContext, r *http.Request, _ map[string]string, _ map[string]string,
-	requestBody []byte) (interface{}, error) {
-	hErr := validateIPUsage(r)
+	hErr := validateIPUsage(request)
 	if hErr != nil {
 		return nil, hErr
 	}
-	requestData := &requestMoneyData{}
-	err := json.Unmarshal(requestBody, requestData)
-	if err != nil {
+	addressString, ok := queryParams["address"]
+	if !ok {
 		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
-			errors.Wrap(err, "Error unmarshalling request body"),
-			"The request body is not json-formatted")
+			errors.Errorf("address not found"),
+			"The address parameter is either missing or empty")
 	}
-	address, err := util.DecodeAddress(requestData.Address, config.ActiveNetParams().Prefix)
+	address, err := util.DecodeAddress(addressString, config.ActiveNetParams().Prefix)
 	if err != nil {
 		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
 			errors.Wrap(err, "Error decoding address"),
 			"Error decoding address")
 	}
-	tx, err := sendToAddress(address)
+	transactionID, err := sendToAddress(address)
 	if err != nil {
-		return nil, err
+		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
+			errors.Wrap(err, "Error sending to address"),
+			fmt.Sprintf("Error sending Kaspa: %s", err))
 	}
-	hErr = updateIPUsage(r)
+	hErr = updateIPUsage(request)
 	if hErr != nil {
 		return nil, hErr
 	}
-	return tx.TxID().String(), nil
+	return transactionID, nil
 }

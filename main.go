@@ -10,7 +10,6 @@ import (
 	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/go-secp256k1"
 	"github.com/kaspanet/kaspad/domain/dagconfig"
-	"github.com/kaspanet/kaspad/domain/txscript"
 	"github.com/kaspanet/kaspad/util"
 	"github.com/kaspanet/kaspad/util/profiling"
 	"github.com/pkg/errors"
@@ -22,9 +21,8 @@ import (
 )
 
 var (
-	faucetAddress      util.Address
-	faucetPrivateKey   *secp256k1.PrivateKey
-	faucetScriptPubKey []byte
+	faucetAddress    util.Address
+	faucetPrivateKey *secp256k1.SchnorrKeyPair
 )
 
 func main() {
@@ -85,11 +83,6 @@ func main() {
 		panic(errors.Errorf("Failed to get P2PKH address from private key: %s", err))
 	}
 
-	faucetScriptPubKey, err = txscript.PayToAddrScript(faucetAddress)
-	if err != nil {
-		panic(errors.Errorf("failed to generate faucetScriptPubKey to address: %s", err))
-	}
-
 	shutdownServer := startHTTPServer(cfg.HTTPListen)
 	defer shutdownServer()
 
@@ -97,14 +90,14 @@ func main() {
 }
 
 // privateKeyToP2PKHAddress generates p2pkh address from private key.
-func privateKeyToP2PKHAddress(key *secp256k1.PrivateKey, net *dagconfig.Params) (util.Address, error) {
+func privateKeyToP2PKHAddress(key *secp256k1.SchnorrKeyPair, net *dagconfig.Params) (util.Address, error) {
 	publicKey, err := key.SchnorrPublicKey()
 	if err != nil {
 		return nil, err
 	}
-	serialized, err := publicKey.SerializeCompressed()
+	serialized, err := publicKey.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	return util.NewAddressPubKeyHashFromPublicKey(serialized, net.Prefix)
+	return util.NewAddressPubKeyHashFromPublicKey(serialized[:], net.Prefix)
 }
