@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -26,9 +25,9 @@ func startHTTPServer(listenAddr string) func() {
 	router.Use(httpserverutils.LoggingMiddleware)
 	router.Use(httpserverutils.SetJSONMiddleware)
 	router.HandleFunc(
-		"/request_money",
+		"/request_money?address={address}",
 		httpserverutils.MakeHandler(requestMoneyHandler)).
-		Methods("POST")
+		Methods("GET")
 	httpServer := &http.Server{
 		Addr:    listenAddr,
 		Handler: handlers.CORS()(router),
@@ -47,24 +46,20 @@ func startHTTPServer(listenAddr string) func() {
 	}
 }
 
-type requestMoneyData struct {
-	Address string `json:"address"`
-}
+func requestMoneyHandler(_ *httpserverutils.ServerContext, request *http.Request,
+	routeParams map[string]string, _ map[string]string, _ []byte) (interface{}, error) {
 
-func requestMoneyHandler(_ *httpserverutils.ServerContext, r *http.Request, _ map[string]string, _ map[string]string,
-	requestBody []byte) (interface{}, error) {
-	hErr := validateIPUsage(r)
+	hErr := validateIPUsage(request)
 	if hErr != nil {
 		return nil, hErr
 	}
-	requestData := &requestMoneyData{}
-	err := json.Unmarshal(requestBody, requestData)
-	if err != nil {
+	addressString, ok := routeParams["address"]
+	if !ok {
 		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
-			errors.Wrap(err, "Error unmarshalling request body"),
-			"The request body is not json-formatted")
+			errors.Errorf("address not found"),
+			"The address parameter is either missing or empty")
 	}
-	address, err := util.DecodeAddress(requestData.Address, config.ActiveNetParams().Prefix)
+	address, err := util.DecodeAddress(addressString, config.ActiveNetParams().Prefix)
 	if err != nil {
 		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
 			errors.Wrap(err, "Error decoding address"),
@@ -74,7 +69,7 @@ func requestMoneyHandler(_ *httpserverutils.ServerContext, r *http.Request, _ ma
 	if err != nil {
 		return nil, err
 	}
-	hErr = updateIPUsage(r)
+	hErr = updateIPUsage(request)
 	if hErr != nil {
 		return nil, hErr
 	}
