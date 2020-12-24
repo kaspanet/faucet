@@ -1,332 +1,172 @@
 package main
 
 import (
-	"bytes"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"github.com/kaspanet/kaspad/app/appmessage"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"path"
-
 	"github.com/kaspanet/faucet/config"
-	"github.com/kaspanet/kaspad/domain/blockdag"
-	"github.com/kaspanet/kaspad/domain/txscript"
+	"github.com/kaspanet/kaspad/app/appmessage"
+	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/constants"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/transactionid"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/txscript"
+	"github.com/kaspanet/kaspad/infrastructure/network/rpcclient"
 	"github.com/kaspanet/kaspad/util"
-	"github.com/kaspanet/kaspad/util/daghash"
-	"github.com/kaspanet/kasparov/apimodels"
-	"github.com/kaspanet/kasparov/httpserverutils"
 	"github.com/pkg/errors"
 )
 
 const (
-	sendAmount = 10000
-	// Value 8 bytes + serialized varint size for the length of ScriptPubKey +
-	// ScriptPubKey bytes.
-	outputSize uint64 = 8 + 1 + 25
-	minTxFee   uint64 = 3000
-
+	sendAmount            = 10000
+	feeSompis             = 3000
 	requiredConfirmations = 10
 )
 
-type utxoSet map[appmessage.Outpoint]*blockdag.UTXOEntry
-
-// apiURL returns a full concatenated URL from the base
-// kasparov server URL and the given path.
-func apiURL(requestPath string) (string, error) {
+func sendToAddress(address util.Address) (string, error) {
 	cfg, err := config.MainConfig()
 	if err != nil {
 		return "", err
 	}
-	u, err := url.Parse(cfg.KasparovURL)
+	client, err := rpcclient.NewRPCClient(cfg.RPCServer)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
-	u.Path = path.Join(u.Path, requestPath)
-	return u.String(), nil
+	utxos, err := fetchSpendableUTXOs(client)
+	if err != nil {
+		return "", err
+	}
+
+	sendAmountSompi := uint64(sendAmount * util.SompiPerKaspa)
+	totalToSend := sendAmountSompi + feeSompis
+	selectedUTXOs, changeSompi, err := selectUTXOs(utxos, totalToSend)
+	if err != nil {
+		return "", err
+	}
+
+	rpcTransaction, err := generateTransaction(selectedUTXOs, sendAmountSompi, changeSompi, address)
+	if err != nil {
+		return "", err
+	}
+
+	return sendTransaction(client, rpcTransaction)
 }
 
-// getFromAPIServer makes an HTTP GET request to the kasparov server
-// to the given request path, and returns the response body.
-func getFromAPIServer(requestPath string) ([]byte, error) {
-	getAPIURL, err := apiURL(requestPath)
+func fetchSpendableUTXOs(client *rpcclient.RPCClient) ([]*appmessage.UTXOsByAddressesEntry, error) {
+	getUTXOsByAddressesResponse, err := client.GetUTXOsByAddresses([]string{faucetAddress.EncodeAddress()})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Get(getAPIURL)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			panic(errors.WithStack(err))
-		}
-	}()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		clientError := &httpserverutils.ClientError{}
-		err := json.Unmarshal(body, &clientError)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		return nil, errors.WithStack(clientError)
-	}
-	return body, nil
-}
-
-// postToAPIServer makes an HTTP POST request to the kasparov server
-// to the given request path. It converts the given data to JSON,
-// and post it as the POST data.
-func postToAPIServer(requestPath string, data interface{}) error {
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	r := bytes.NewReader(dataBytes)
-	postAPIURL, err := apiURL(requestPath)
-	if err != nil {
-		return err
-	}
-	resp, err := http.Post(postAPIURL, "application/json", r)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			panic(errors.WithStack(err))
-		}
-	}()
-	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		clientError := &httpserverutils.ClientError{}
-		err = json.Unmarshal(body, &clientError)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		return errors.WithStack(clientError)
-	}
-	return nil
-}
-
-func isUTXOMatured(entry *blockdag.UTXOEntry, confirmations uint64) bool {
-	if entry.IsCoinbase() {
-		return confirmations >= config.ActiveNetParams().BlockCoinbaseMaturity
-	}
-	return confirmations >= requiredConfirmations
-}
-
-func getWalletUTXOSet() (utxoSet, error) {
-	body, err := getFromAPIServer(fmt.Sprintf("utxos/address/%s", faucetAddress.EncodeAddress()))
+	virtualSelectedParentBlueScoreResponse, err := client.GetVirtualSelectedParentBlueScore()
 	if err != nil {
 		return nil, err
 	}
-	utxoResponses := []*apimodels.TransactionOutputResponse{}
-	err = json.Unmarshal(body, &utxoResponses)
-	if err != nil {
-		return nil, err
-	}
-	walletUTXOSet := make(utxoSet)
-	for _, utxoResponse := range utxoResponses {
-		scriptPubKey, err := hex.DecodeString(utxoResponse.ScriptPubKey)
-		if err != nil {
-			return nil, err
-		}
-		txOut := &appmessage.TxOut{
-			Value:        utxoResponse.Value,
-			ScriptPubKey: scriptPubKey,
-		}
-		txID, err := daghash.NewTxIDFromStr(utxoResponse.TransactionID)
-		if err != nil {
-			return nil, err
-		}
-		outpoint := appmessage.NewOutpoint(txID, utxoResponse.Index)
-		utxoEntry := blockdag.NewUTXOEntry(txOut, *utxoResponse.IsCoinbase, *utxoResponse.AcceptingBlockBlueScore)
-		if !isUTXOMatured(utxoEntry, *utxoResponse.Confirmations) {
+	virtualSelectedParentBlueScore := virtualSelectedParentBlueScoreResponse.BlueScore
+
+	spendableUTXOs := make([]*appmessage.UTXOsByAddressesEntry, 0)
+	for _, entry := range getUTXOsByAddressesResponse.Entries {
+		if !isUTXOSpendable(entry, virtualSelectedParentBlueScore) {
 			continue
 		}
-		walletUTXOSet[*outpoint] = utxoEntry
+		spendableUTXOs = append(spendableUTXOs, entry)
 	}
-	return walletUTXOSet, nil
+	return spendableUTXOs, nil
 }
 
-func sendToAddress(address util.Address) (*appmessage.MsgTx, error) {
-	tx, err := createTx(address)
-	if err != nil {
-		return nil, err
+func isUTXOSpendable(entry *appmessage.UTXOsByAddressesEntry, virtualSelectedParentBlueScore uint64) bool {
+	blockBlueScore := entry.UTXOEntry.BlockBlueScore
+	if !entry.UTXOEntry.IsCoinbase {
+		return blockBlueScore+requiredConfirmations < virtualSelectedParentBlueScore
 	}
-	buf := bytes.NewBuffer(make([]byte, 0, tx.SerializeSize()))
-	if err := tx.Serialize(buf); err != nil {
-		return nil, err
-	}
-	rawTx := &apimodels.RawTransaction{RawTransaction: hex.EncodeToString(buf.Bytes())}
-	return tx, postToAPIServer("transaction", rawTx)
+	coinbaseMaturity := config.ActiveNetParams().BlockCoinbaseMaturity
+	return blockBlueScore+coinbaseMaturity < virtualSelectedParentBlueScore
 }
 
-func createTx(address util.Address) (*appmessage.MsgTx, error) {
-	walletUTXOSet, err := getWalletUTXOSet()
-	if err != nil {
-		return nil, err
-	}
-	tx, err := createUnsignedTx(walletUTXOSet, address)
-	if err != nil {
-		return nil, err
-	}
-	err = signTx(walletUTXOSet, tx)
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
-}
+func selectUTXOs(utxos []*appmessage.UTXOsByAddressesEntry, totalToSpend uint64) (
+	selectedUTXOs []*appmessage.UTXOsByAddressesEntry, changeSompi uint64, err error) {
 
-func createUnsignedTx(walletUTXOSet utxoSet, address util.Address) (*appmessage.MsgTx, error) {
-	tx := appmessage.NewNativeMsgTx(appmessage.TxVersion, nil, nil)
-	netAmount, isChangeOutputRequired, err := fundTx(walletUTXOSet, tx, sendAmount)
-	if err != nil {
-		return nil, err
-	}
-	if isChangeOutputRequired {
-		tx.AddTxOut(&appmessage.TxOut{
-			Value:        sendAmount,
-			ScriptPubKey: address.ScriptAddress(),
-		})
-		tx.AddTxOut(&appmessage.TxOut{
-			Value:        netAmount - sendAmount,
-			ScriptPubKey: faucetScriptPubKey,
-		})
-		return tx, nil
-	}
-	tx.AddTxOut(&appmessage.TxOut{
-		Value:        netAmount,
-		ScriptPubKey: address.ScriptAddress(),
-	})
-	return tx, nil
-}
+	selectedUTXOs = []*appmessage.UTXOsByAddressesEntry{}
+	totalValue := uint64(0)
 
-// signTx signs a transaction
-func signTx(walletUTXOSet utxoSet, tx *appmessage.MsgTx) error {
-	for i, txIn := range tx.TxIn {
-		outpoint := txIn.PreviousOutpoint
+	for _, utxo := range utxos {
+		selectedUTXOs = append(selectedUTXOs, utxo)
+		totalValue += utxo.UTXOEntry.Amount
 
-		sigScript, err := txscript.SignatureScript(tx, i, walletUTXOSet[outpoint].ScriptPubKey(),
-			txscript.SigHashAll, faucetPrivateKey, true)
-		if err != nil {
-			return errors.Errorf("Failed to sign transaction: %s", err)
-		}
-		txIn.SignatureScript = sigScript
-	}
-
-	return nil
-}
-
-func fundTx(walletUTXOSet utxoSet, tx *appmessage.MsgTx, amount uint64) (netAmount uint64, isChangeOutputRequired bool, err error) {
-	amountSelected := uint64(0)
-	isTxFunded := false
-	for outpoint, entry := range walletUTXOSet {
-		amountSelected += entry.Amount()
-
-		// Add the selected output to the transaction
-		tx.AddTxIn(appmessage.NewTxIn(&outpoint, nil))
-
-		// Check if transaction has enough funds. If we don't have enough
-		// coins from the current amount selected to pay the fee continue
-		// to grab more coins.
-		isTxFunded, isChangeOutputRequired, netAmount, err = isFundedAndIsChangeOutputRequired(tx, amountSelected, amount, walletUTXOSet)
-		if err != nil {
-			return 0, false, err
-		}
-		if isTxFunded {
+		if totalValue >= totalToSpend {
 			break
 		}
 	}
 
-	if !isTxFunded {
-		return 0, false, errors.Errorf("not enough funds for coin selection")
+	if totalValue < totalToSpend {
+		return nil, 0, errors.Errorf("Insufficient funds for send: %f required, while only %f available",
+			float64(totalToSpend)/util.SompiPerKaspa, float64(totalValue)/util.SompiPerKaspa)
 	}
 
-	return netAmount, isChangeOutputRequired, nil
+	return selectedUTXOs, totalValue - totalToSpend, nil
 }
 
-// isFundedAndIsChangeOutputRequired returns three values and an error:
-// * isTxFunded is whether the transaction inputs cover the target amount + the required fee.
-// * isChangeOutputRequired is whether it is profitable to add an additional change
-//   output to the transaction.
-// * netAmount is the amount of coins that will be eventually sent to the recipient. If no
-//   change output is needed, the netAmount will be usually a little bit higher than the
-//   targetAmount. Otherwise, it'll be the same as the targetAmount.
-func isFundedAndIsChangeOutputRequired(tx *appmessage.MsgTx, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded, isChangeOutputRequired bool, netAmount uint64, err error) {
-	// First check if it can be funded with one output and the required fee for it.
-	isFundedWithOneOutput, oneOutputFee, err := isFundedWithNumberOfOutputs(tx, 1, amountSelected, targetAmount, walletUTXOSet)
+func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
+	sompisToSend uint64, change uint64, toAddress util.Address) (*appmessage.RPCTransaction, error) {
+
+	inputs := make([]*externalapi.DomainTransactionInput, len(selectedUTXOs))
+	for i, utxo := range selectedUTXOs {
+		outpointTransactionIDBytes, err := hex.DecodeString(utxo.Outpoint.TransactionID)
+		if err != nil {
+			return nil, err
+		}
+		outpointTransactionID, err := transactionid.FromBytes(outpointTransactionIDBytes)
+		if err != nil {
+			return nil, err
+		}
+		outpoint := externalapi.DomainOutpoint{
+			TransactionID: *outpointTransactionID,
+			Index:         utxo.Outpoint.Index,
+		}
+		inputs[i] = &externalapi.DomainTransactionInput{PreviousOutpoint: outpoint}
+	}
+
+	toScript, err := txscript.PayToAddrScript(toAddress)
 	if err != nil {
-		return false, false, 0, err
+		return nil, err
 	}
-	if !isFundedWithOneOutput {
-		return false, false, 0, nil
+	mainOutput := &externalapi.DomainTransactionOutput{
+		Value:           sompisToSend,
+		ScriptPublicKey: toScript,
 	}
-
-	// Now check if it can be funded with two outputs and the required fee for it.
-	isFundedWithTwoOutputs, twoOutputsFee, err := isFundedWithNumberOfOutputs(tx, 2, amountSelected, targetAmount, walletUTXOSet)
+	fromScript, err := txscript.PayToAddrScript(faucetAddress)
 	if err != nil {
-		return false, false, 0, err
+		return nil, err
+	}
+	changeOutput := &externalapi.DomainTransactionOutput{
+		Value:           change,
+		ScriptPublicKey: fromScript,
+	}
+	outputs := []*externalapi.DomainTransactionOutput{mainOutput, changeOutput}
+
+	domainTransaction := &externalapi.DomainTransaction{
+		Version:      constants.TransactionVersion,
+		Inputs:       inputs,
+		Outputs:      outputs,
+		LockTime:     0,
+		SubnetworkID: subnetworks.SubnetworkIDNative,
+		Gas:          0,
+		Payload:      nil,
+		PayloadHash:  externalapi.DomainHash{},
 	}
 
-	// If it can be funded with two outputs, check if adding a change output worth it: i.e. check if
-	// the amount you save by not sending the recipient the whole inputs amount (minus fees) is greater
-	// than the additional fee that is required by adding a change output. If this is the case, return
-	// isChangeOutputRequired as true.
-	if isFundedWithTwoOutputs && twoOutputsFee-oneOutputFee < targetAmount-amountSelected {
-		return true, true, amountSelected - twoOutputsFee, nil
+	for i, input := range domainTransaction.Inputs {
+		signatureScript, err := txscript.SignatureScript(domainTransaction, i, fromScript, txscript.SigHashAll, faucetPrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		input.SignatureScript = signatureScript
 	}
-	return true, false, amountSelected - oneOutputFee, nil
+
+	rpcTransaction := appmessage.DomainTransactionToRPCTransaction(domainTransaction)
+	return rpcTransaction, nil
 }
 
-// isFundedWithNumberOfOutputs returns whether the transaction inputs cover
-// the target amount + the required fee with the assumed number of outputs.
-func isFundedWithNumberOfOutputs(tx *appmessage.MsgTx, numberOfOutputs uint64, amountSelected uint64, targetAmount uint64, walletUTXOSet utxoSet) (isTxFunded bool, fee uint64, err error) {
-	reqFee, err := calcFee(tx, numberOfOutputs, walletUTXOSet)
+func sendTransaction(client *rpcclient.RPCClient, rpcTransaction *appmessage.RPCTransaction) (string, error) {
+	submitTransactionResponse, err := client.SubmitTransaction(rpcTransaction)
 	if err != nil {
-		return false, 0, err
+		return "", errors.Wrapf(err, "error submitting transaction")
 	}
-	return amountSelected > reqFee && amountSelected-reqFee >= targetAmount, reqFee, nil
-}
-
-func calcFee(msgTx *appmessage.MsgTx, numberOfOutputs uint64, walletUTXOSet utxoSet) (uint64, error) {
-	txMass := calcTxMass(msgTx, walletUTXOSet)
-	txMassWithOutputs := txMass + outputsTotalSize(numberOfOutputs)*blockdag.MassPerTxByte
-	cfg, err := config.MainConfig()
-	if err != nil {
-		return 0, err
-	}
-	reqFee := uint64(float64(txMassWithOutputs) * cfg.FeeRate)
-	if reqFee < minTxFee {
-		return minTxFee, nil
-	}
-	return reqFee, nil
-}
-
-func outputsTotalSize(numberOfOutputs uint64) uint64 {
-	return numberOfOutputs*outputSize + uint64(appmessage.VarIntSerializeSize(numberOfOutputs))
-}
-
-func calcTxMass(msgTx *appmessage.MsgTx, walletUTXOSet utxoSet) uint64 {
-	previousScriptPubKeys := getPreviousScriptPubKeys(msgTx, walletUTXOSet)
-	return blockdag.CalcTxMass(util.NewTx(msgTx), previousScriptPubKeys)
-}
-
-func getPreviousScriptPubKeys(msgTx *appmessage.MsgTx, walletUTXOSet utxoSet) [][]byte {
-	previousScriptPubKeys := make([][]byte, len(msgTx.TxIn))
-	for i, txIn := range msgTx.TxIn {
-		outpoint := txIn.PreviousOutpoint
-		previousScriptPubKeys[i] = walletUTXOSet[outpoint].ScriptPubKey()
-	}
-	return previousScriptPubKeys
+	return submitTransactionResponse.TransactionID, nil
 }

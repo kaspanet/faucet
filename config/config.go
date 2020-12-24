@@ -34,7 +34,7 @@ type Config struct {
 	ShowVersion bool    `short:"V" long:"version" description:"Display version information and exit"`
 	LogDir      string  `long:"logdir" description:"Directory to log output."`
 	HTTPListen  string  `long:"listen" description:"HTTP address to listen on default: 0.0.0.0:8081)"`
-	KasparovURL string  `long:"kasparov-url" description:"The kasparov url to connect to"`
+	RPCServer   string  `long:"rpcserver" short:"s" description:"RPC server to connect to"`
 	PrivateKey  string  `long:"private-key" description:"Faucet Private key"`
 	DBAddress   string  `long:"dbaddress" description:"Database address" default:"localhost:5432"`
 	DBSSLMode   string  `long:"dbsslmode" description:"Database SSL mode" choice:"disable" choice:"allow" choice:"prefer" choice:"require" choice:"verify-ca" choice:"verify-full" default:"disable"`
@@ -73,8 +73,8 @@ func Parse() error {
 	}
 
 	if !cfg.Migrate {
-		if cfg.KasparovURL == "" {
-			return errors.New("api-server-url argument is required when --migrate flag is not raised")
+		if cfg.RPCServer == "" {
+			return errors.New("rpcserver argument is required when --migrate flag is not raised")
 		}
 		if cfg.PrivateKey == "" {
 			return errors.New("private-key argument is required when --migrate flag is not raised")

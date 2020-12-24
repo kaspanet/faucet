@@ -70,7 +70,7 @@ func requestMoneyHandler(_ *httpserverutils.ServerContext, r *http.Request, _ ma
 			errors.Wrap(err, "Error decoding address"),
 			"Error decoding address")
 	}
-	tx, err := sendToAddress(address)
+	transactionID, err := sendToAddress(address)
 	if err != nil {
 		return nil, err
 	}
@@ -78,5 +78,5 @@ func requestMoneyHandler(_ *httpserverutils.ServerContext, r *http.Request, _ ma
 	if hErr != nil {
 		return nil, hErr
 	}
-	return tx.TxID().String(), nil
+	return transactionID, nil
 }
