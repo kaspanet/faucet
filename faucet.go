@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	sendAmount            = 10000
+	sendAmountKaspa       = 1
 	feeSompis             = 3000
 	requiredConfirmations = 10
 )
@@ -34,7 +34,7 @@ func sendToAddress(address util.Address) (string, error) {
 		return "", err
 	}
 
-	sendAmountSompi := uint64(sendAmount * util.SompiPerKaspa)
+	sendAmountSompi := uint64(sendAmountKaspa * util.SompiPerKaspa)
 	totalToSend := sendAmountSompi + feeSompis
 	selectedUTXOs, changeSompi, err := selectUTXOs(utxos, totalToSend)
 	if err != nil {

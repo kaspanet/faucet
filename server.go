@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -25,7 +26,7 @@ func startHTTPServer(listenAddr string) func() {
 	router.Use(httpserverutils.LoggingMiddleware)
 	router.Use(httpserverutils.SetJSONMiddleware)
 	router.HandleFunc(
-		"/request_money?address={address}",
+		"/request_money",
 		httpserverutils.MakeHandler(requestMoneyHandler)).
 		Methods("GET")
 	httpServer := &http.Server{
@@ -47,13 +48,13 @@ func startHTTPServer(listenAddr string) func() {
 }
 
 func requestMoneyHandler(_ *httpserverutils.ServerContext, request *http.Request,
-	routeParams map[string]string, _ map[string]string, _ []byte) (interface{}, error) {
+	_ map[string]string, queryParams map[string]string, _ []byte) (interface{}, error) {
 
 	hErr := validateIPUsage(request)
 	if hErr != nil {
 		return nil, hErr
 	}
-	addressString, ok := routeParams["address"]
+	addressString, ok := queryParams["address"]
 	if !ok {
 		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
 			errors.Errorf("address not found"),
@@ -67,7 +68,9 @@ func requestMoneyHandler(_ *httpserverutils.ServerContext, request *http.Request
 	}
 	transactionID, err := sendToAddress(address)
 	if err != nil {
-		return nil, err
+		return nil, httpserverutils.NewHandlerErrorWithCustomClientMessage(http.StatusUnprocessableEntity,
+			errors.Wrap(err, "Error sending to address"),
+			fmt.Sprintf("Error sending Kaspa: %s", err))
 	}
 	hErr = updateIPUsage(request)
 	if hErr != nil {
