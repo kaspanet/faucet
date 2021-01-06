@@ -141,7 +141,7 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 	outputs := []*externalapi.DomainTransactionOutput{mainOutput, changeOutput}
 
 	domainTransaction := &externalapi.DomainTransaction{
-		Version:      constants.TransactionVersion,
+		Version:      constants.MaxTransactionVersion,
 		Inputs:       inputs,
 		Outputs:      outputs,
 		LockTime:     0,
