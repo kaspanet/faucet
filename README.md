@@ -51,14 +51,13 @@ $ go install ./...
 ## Getting Started
 
 Faucet expects to have access to the following systems:
-- A [kasparov server](https://github.com/kaspanet/kasparov)
-- A MySQL database
+- A PostgreSQL database
 
 ### Linux/BSD/POSIX/Source
 
 ```bash
 $ ./faucet --dbuser=user --dbpass=pass --dbaddress=localhost:3306 --dbname=faucet --migrate --testnet
-$ ./faucet --dbuser=user --dbpass=pass --dbaddress=localhost:3306 --dbname=faucet --fee-rate=5 --private-key=00000000000000000000000000000000000000000000 --kasparovd-url=http://localhost:8080 --testnet
+$ ./faucet --dbuser=user --dbpass=pass --dbaddress=localhost:3306 --dbname=faucet --fee-rate=5 --private-key=0000000000000000000000000000000000000000000 --rpcserver=localhost --testnet
 ```
 
 ## Discord

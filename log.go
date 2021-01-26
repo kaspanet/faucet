@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kaspanet/kaspad/infrastructure/logger"
+	"github.com/kaspanet/faucet/logger"
 	"github.com/kaspanet/kaspad/util/panics"
 )
 

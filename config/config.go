@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/kaspanet/faucet/logger"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/kaspad/domain/dagconfig"
 	"github.com/kaspanet/kaspad/util"
-	"github.com/kaspanet/kasparov/logger"
 	"github.com/pkg/errors"
 )
 

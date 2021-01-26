@@ -11,22 +11,15 @@ RUN go get -u golang.org/x/lint/golint
 COPY go.mod .
 COPY go.sum .
 
-# For development it's useful to have kasparov and kaspad from filesystem,
+# For development it's useful to have kaspad from filesystem,
 # but for deployment we should use the one in github
 RUN go mod edit -dropreplace github.com/kaspanet/kaspad 
-RUN go mod edit -dropreplace github.com/kaspanet/kasparov
 ARG KASPAD_VERSION
-ARG KASPAROV_VERSION
 RUN \
-    if [ -n "${KASPAD_VERSION}" ] || [ -n "${KASPAROV_VERSION}" ] ; then \
-        if [ -z "${KASPAD_VERSION}" ] || [ -z "${KASPAROV_VERSION}" ] ; then \
-            >&2 echo "KASPAD_VERSION and KASPAROV_VERSION must be both set or both unset"; \
-            exit 1; \
-        fi; \
+    if [ -n "${KASPAD_VERSION}" ] ; then \
         # use replace instead of require - to propagate into nested dependancies
         go mod edit \                       
-        -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION \
-        -replace github.com/kaspanet/kasparov=github.com/kaspanet/kasparov@$KASPAROV_VERSION; \
+        -replace github.com/kaspanet/kaspad=github.com/kaspanet/kaspad@$KASPAD_VERSION; \
     fi
 
 RUN cp go.mod go.mod.bu

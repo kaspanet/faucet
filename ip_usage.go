@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/kaspanet/faucet/database"
-	"github.com/kaspanet/kasparov/httpserverutils"
+	"github.com/kaspanet/faucet/httpserverutils"
 	"github.com/pkg/errors"
 )
 

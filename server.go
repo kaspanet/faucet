@@ -6,13 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kaspanet/faucet/config"
-	"github.com/kaspanet/kaspad/util"
-	"github.com/kaspanet/kasparov/httpserverutils"
-	"github.com/pkg/errors"
-
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/kaspanet/faucet/config"
+	"github.com/kaspanet/faucet/httpserverutils"
+	"github.com/kaspanet/kaspad/util"
+	"github.com/pkg/errors"
 )
 
 const gracefulShutdownTimeout = 30 * time.Second
