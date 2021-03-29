@@ -152,9 +152,10 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 		Payload:      nil,
 	}
 
+	sighashReusedValues := &consensushashing.SighashReusedValues{}
 	for i, input := range domainTransaction.Inputs {
 		signatureScript, err := txscript.SignatureScript(
-			domainTransaction, i, consensushashing.SigHashAll, faucetPrivateKey, &consensushashing.SighashReusedValues{})
+			domainTransaction, i, consensushashing.SigHashAll, faucetPrivateKey, sighashReusedValues)
 		if err != nil {
 			return nil, err
 		}
