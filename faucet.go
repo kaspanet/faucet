@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/hex"
+
 	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/consensushashing"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/constants"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/transactionid"
@@ -148,11 +150,11 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 		SubnetworkID: subnetworks.SubnetworkIDNative,
 		Gas:          0,
 		Payload:      nil,
-		PayloadHash:  externalapi.DomainHash{},
 	}
 
 	for i, input := range domainTransaction.Inputs {
-		signatureScript, err := txscript.SignatureScript(domainTransaction, i, fromScript, txscript.SigHashAll, faucetPrivateKey)
+		signatureScript, err := txscript.SignatureScript(
+			domainTransaction, i, consensushashing.SigHashAll, faucetPrivateKey, &consensushashing.SighashReusedValues{})
 		if err != nil {
 			return nil, err
 		}
