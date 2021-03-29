@@ -71,12 +71,12 @@ func fetchSpendableUTXOs(client *rpcclient.RPCClient) ([]*appmessage.UTXOsByAddr
 }
 
 func isUTXOSpendable(entry *appmessage.UTXOsByAddressesEntry, virtualSelectedParentBlueScore uint64) bool {
-	blockBlueScore := entry.UTXOEntry.BlockBlueScore
+	blockDAAScore := entry.UTXOEntry.BlockDAAScore
 	if !entry.UTXOEntry.IsCoinbase {
-		return blockBlueScore+requiredConfirmations < virtualSelectedParentBlueScore
+		return blockDAAScore+requiredConfirmations < virtualSelectedParentBlueScore
 	}
 	coinbaseMaturity := config.ActiveNetParams().BlockCoinbaseMaturity
-	return blockBlueScore+coinbaseMaturity < virtualSelectedParentBlueScore
+	return blockDAAScore+coinbaseMaturity < virtualSelectedParentBlueScore
 }
 
 func selectUTXOs(utxos []*appmessage.UTXOsByAddressesEntry, totalToSpend uint64) (
