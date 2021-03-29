@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/hex"
+
 	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
+	"github.com/kaspanet/kaspad/domain/consensus/utils/consensushashing"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/constants"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/subnetworks"
 	"github.com/kaspanet/kaspad/domain/consensus/utils/transactionid"
@@ -71,12 +73,12 @@ func fetchSpendableUTXOs(client *rpcclient.RPCClient) ([]*appmessage.UTXOsByAddr
 }
 
 func isUTXOSpendable(entry *appmessage.UTXOsByAddressesEntry, virtualSelectedParentBlueScore uint64) bool {
-	blockBlueScore := entry.UTXOEntry.BlockBlueScore
+	blockDAAScore := entry.UTXOEntry.BlockDAAScore
 	if !entry.UTXOEntry.IsCoinbase {
-		return blockBlueScore+requiredConfirmations < virtualSelectedParentBlueScore
+		return blockDAAScore+requiredConfirmations < virtualSelectedParentBlueScore
 	}
 	coinbaseMaturity := config.ActiveNetParams().BlockCoinbaseMaturity
-	return blockBlueScore+coinbaseMaturity < virtualSelectedParentBlueScore
+	return blockDAAScore+coinbaseMaturity < virtualSelectedParentBlueScore
 }
 
 func selectUTXOs(utxos []*appmessage.UTXOsByAddressesEntry, totalToSpend uint64) (
@@ -148,11 +150,12 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 		SubnetworkID: subnetworks.SubnetworkIDNative,
 		Gas:          0,
 		Payload:      nil,
-		PayloadHash:  externalapi.DomainHash{},
 	}
 
+	sighashReusedValues := &consensushashing.SighashReusedValues{}
 	for i, input := range domainTransaction.Inputs {
-		signatureScript, err := txscript.SignatureScript(domainTransaction, i, fromScript, txscript.SigHashAll, faucetPrivateKey)
+		signatureScript, err := txscript.SignatureScript(
+			domainTransaction, i, consensushashing.SigHashAll, faucetPrivateKey, sighashReusedValues)
 		if err != nil {
 			return nil, err
 		}

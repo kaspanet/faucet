@@ -22,7 +22,7 @@ const (
 
 var (
 	// Default configuration options
-	defaultLogDir     = util.AppDataDir("faucet", false)
+	defaultLogDir     = util.AppDir("faucet", false)
 	defaultHTTPListen = "0.0.0.0:8081"
 
 	// activeNetParams are the currently active net params
