@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	log = logger.BackendLog.Logger("UTIL")
+	log = logger.Logger("HTSU")
 )

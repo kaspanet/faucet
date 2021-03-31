@@ -2,13 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/kaspanet/faucet/logger"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/kaspanet/faucet/logger"
 	"github.com/kaspanet/faucet/version"
 	"github.com/kaspanet/kaspad/domain/dagconfig"
 	"github.com/kaspanet/kaspad/util"
@@ -96,6 +96,11 @@ func Parse() error {
 	logFile := filepath.Join(cfg.LogDir, defaultLogFilename)
 	errLogFile := filepath.Join(cfg.LogDir, defaultErrLogFilename)
 	logger.InitLog(logFile, errLogFile)
+
+	err = logger.SetLogLevels("debug")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
