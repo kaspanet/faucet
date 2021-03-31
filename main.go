@@ -76,7 +76,7 @@ func main() {
 		panic(errors.Wrap(err, "failed to deserialize private key"))
 	}
 
-	faucetPrivateKey, _ = secp256k1.DeserializePrivateKeyFromSlice(privateKeyBytes)
+	faucetPrivateKey, _ = secp256k1.DeserializeSchnorrPrivateKeyFromSlice(privateKeyBytes)
 
 	faucetAddress, err = privateKeyToP2PKHAddress(faucetPrivateKey, config.ActiveNetParams())
 	if err != nil {
