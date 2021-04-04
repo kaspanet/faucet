@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/hex"
 
+	"github.com/kaspanet/kaspad/domain/consensus/utils/utxo"
+
 	"github.com/kaspanet/faucet/config"
 	"github.com/kaspanet/kaspad/app/appmessage"
 	"github.com/kaspanet/kaspad/domain/consensus/model/externalapi"
@@ -108,8 +110,8 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 	sompisToSend uint64, change uint64, toAddress util.Address) (*appmessage.RPCTransaction, error) {
 
 	inputs := make([]*externalapi.DomainTransactionInput, len(selectedUTXOs))
-	for i, utxo := range selectedUTXOs {
-		outpointTransactionIDBytes, err := hex.DecodeString(utxo.Outpoint.TransactionID)
+	for i, selectedUTXO := range selectedUTXOs {
+		outpointTransactionIDBytes, err := hex.DecodeString(selectedUTXO.Outpoint.TransactionID)
 		if err != nil {
 			return nil, err
 		}
@@ -119,9 +121,20 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 		}
 		outpoint := externalapi.DomainOutpoint{
 			TransactionID: *outpointTransactionID,
-			Index:         utxo.Outpoint.Index,
+			Index:         selectedUTXO.Outpoint.Index,
 		}
-		inputs[i] = &externalapi.DomainTransactionInput{PreviousOutpoint: outpoint}
+
+		utxoEntry, err := utxoEntryToDomain(selectedUTXO)
+		if err != nil {
+			return nil, err
+		}
+
+		inputs[i] = &externalapi.DomainTransactionInput{
+			PreviousOutpoint: outpoint,
+			SignatureScript:  nil,
+			Sequence:         0,
+			UTXOEntry:        utxoEntry,
+		}
 	}
 
 	toScript, err := txscript.PayToAddrScript(toAddress)
@@ -164,6 +177,21 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 
 	rpcTransaction := appmessage.DomainTransactionToRPCTransaction(domainTransaction)
 	return rpcTransaction, nil
+}
+
+func utxoEntryToDomain(selectedUTXO *appmessage.UTXOsByAddressesEntry) (externalapi.UTXOEntry, error) {
+	scriptPublicKey, err := hex.DecodeString(selectedUTXO.UTXOEntry.ScriptPublicKey.Script)
+	if err != nil {
+		return nil, err
+	}
+	return utxo.NewUTXOEntry(
+		selectedUTXO.UTXOEntry.Amount,
+		&externalapi.ScriptPublicKey{
+			Script:  scriptPublicKey,
+			Version: selectedUTXO.UTXOEntry.ScriptPublicKey.Version,
+		},
+		selectedUTXO.UTXOEntry.IsCoinbase,
+		selectedUTXO.UTXOEntry.BlockDAAScore), nil
 }
 
 func sendTransaction(client *rpcclient.RPCClient, rpcTransaction *appmessage.RPCTransaction) (string, error) {
