@@ -99,5 +99,5 @@ func privateKeyToP2PKHAddress(key *secp256k1.SchnorrKeyPair, net *dagconfig.Para
 	if err != nil {
 		return nil, err
 	}
-	return util.NewAddressPubKeyHashFromPublicKey(serialized[:], net.Prefix)
+	return util.NewAddressPublicKey(serialized[:], net.Prefix)
 }
