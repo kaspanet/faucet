@@ -195,7 +195,7 @@ func utxoEntryToDomain(selectedUTXO *appmessage.UTXOsByAddressesEntry) (external
 }
 
 func sendTransaction(client *rpcclient.RPCClient, rpcTransaction *appmessage.RPCTransaction) (string, error) {
-	submitTransactionResponse, err := client.SubmitTransaction(rpcTransaction)
+	submitTransactionResponse, err := client.SubmitTransaction(rpcTransaction, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "error submitting transaction")
 	}
