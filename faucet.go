@@ -133,6 +133,7 @@ func generateTransaction(selectedUTXOs []*appmessage.UTXOsByAddressesEntry,
 			PreviousOutpoint: outpoint,
 			SignatureScript:  nil,
 			Sequence:         0,
+			SigOpCount:       1,
 			UTXOEntry:        utxoEntry,
 		}
 	}
