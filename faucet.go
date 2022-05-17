@@ -38,7 +38,7 @@ func sendToAddress(address util.Address) (string, error) {
 		return "", err
 	}
 
-	sendAmountSompi := uint64(sendAmountKaspa * util.SompiPerKaspa)
+	sendAmountSompi := uint64(sendAmountKaspa * constants.SompiPerKaspa)
 	totalToSend := sendAmountSompi + feeSompis
 	selectedUTXOs, changeSompi, err := selectUTXOs(utxos, totalToSend)
 	if err != nil {
@@ -100,7 +100,7 @@ func selectUTXOs(utxos []*appmessage.UTXOsByAddressesEntry, totalToSpend uint64)
 
 	if totalValue < totalToSpend {
 		return nil, 0, errors.Errorf("Insufficient funds for send: %f required, while only %f available",
-			float64(totalToSpend)/util.SompiPerKaspa, float64(totalValue)/util.SompiPerKaspa)
+			float64(totalToSpend)/constants.SompiPerKaspa, float64(totalValue)/constants.SompiPerKaspa)
 	}
 
 	return selectedUTXOs, totalValue - totalToSpend, nil
@@ -195,7 +195,7 @@ func utxoEntryToDomain(selectedUTXO *appmessage.UTXOsByAddressesEntry) (external
 }
 
 func sendTransaction(client *rpcclient.RPCClient, rpcTransaction *appmessage.RPCTransaction) (string, error) {
-	submitTransactionResponse, err := client.SubmitTransaction(rpcTransaction)
+	submitTransactionResponse, err := client.SubmitTransaction(rpcTransaction, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "error submitting transaction")
 	}
